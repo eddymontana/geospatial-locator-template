@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commercial Store Locator System Template</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <header class="p-4 bg-gray-900 text-white">
+                <h1 class="text-xl font-bold">System Loading...</h1>
+                <p class="text-sm">Initializing baseline data maps...</p>
+            </header>
+            
+            <div class="search-area">
+                <input type="text" id="address-input" placeholder="Enter street name, area, or zip code" class="search-input">
+                <button id="search-button" class="search-button">Search</button>
+            </div>
+
+            <div id="store-list" class="store-list">
+                <p class="p-4 text-gray-500 text-sm">Submit your query above to locate matching spatial properties near you.</p>
+            </div>
+        </div>
+
+        <div id="map" class="map-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+
+    <script 
+        src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_PLACEHOLDER&libraries=places&callback=initMap" 
+        async defer
+    ></script>
+</body>
+</html>
