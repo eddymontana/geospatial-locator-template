@@ -18,7 +18,7 @@ let markers = [];
 const BACKEND_API_URL = '/api/search'; 
 
 // CRITICAL FIX: Expose initMap globally for the script callback to register properly
-window.initMap = function() {
+window.initMap = async function() {
     console.log("Google Maps API loaded. Initializing client interface module...");
     
     // Inject brand identities dynamically straight into the viewport DOM elements
@@ -28,23 +28,32 @@ window.initMap = function() {
     if (headerTitle) headerTitle.textContent = CLIENT_CONFIG.brandName;
     if (headerTagline) headerTagline.textContent = CLIENT_CONFIG.tagline;
 
-    map = new google.maps.Map(document.getElementById('map'), {
-        center: CLIENT_CONFIG.defaultCoords,
-        zoom: CLIENT_CONFIG.mapZoom,
-        mapId: 'STORE_LOCATOR_MAP_ID', // Reused standard token identity mapping
-    });
+    try {
+        // Asynchronously request core map layouts and marker library assets
+        const { Map } = await google.maps.importLibrary("maps");
+        await google.maps.importLibrary("marker");
 
-    infoWindow = new google.maps.InfoWindow();
-    
-    const searchButton = document.getElementById('search-button');
-    if (searchButton) {
-        searchButton.addEventListener('click', handleSearch);
-    } else {
-        console.error("Critical Runtime Error: Search controller button missing.");
+        map = new Map(document.getElementById('map'), {
+            center: CLIENT_CONFIG.defaultCoords,
+            zoom: CLIENT_CONFIG.mapZoom,
+            mapId: 'DEMO_MAP_ID', // Replaced with evaluation token for AdvancedMarkerElement support
+        });
+
+        infoWindow = new google.maps.InfoWindow();
+        
+        const searchButton = document.getElementById('search-button');
+        if (searchButton) {
+            searchButton.addEventListener('click', handleSearch);
+        } else {
+            console.error("Critical Runtime Error: Search controller button missing.");
+        }
+        
+        // Initial data rendering pull using the defaults
+        fetchStores(CLIENT_CONFIG.defaultCoords);
+    } catch (err) {
+        console.error("Failed to initialize Google Maps interface components:", err);
+        alertMessage("Failed to initialize Google Maps elements. Verify API configuration privileges.", "error");
     }
-    
-    // Initial data rendering pull using the defaults
-    fetchStores(CLIENT_CONFIG.defaultCoords);
 }
 
 /**
@@ -135,7 +144,8 @@ function displayFeatures(features) {
             hours: properties.phone || "Operational (Mock Range)"
         };
 
-        marker.addListener('click', () => {
+        // CRITICAL UPDATE: Utilizing native 'gmp-click' for Web Component safety
+        marker.addListener('gmp-click', () => {
             showStoreDetails(marker, storeData);
         });
 

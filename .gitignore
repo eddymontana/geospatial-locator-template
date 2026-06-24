@@ -4,4 +4,4 @@
 # Compiled binaries and app rules
 go-app
 *.tgz
-*.sql
+*.sql.env 
