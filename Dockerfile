@@ -1,39 +1,36 @@
-# Build Stage: Compiles the Go application
-FROM golang:1.25 AS builder
+# Step 1: Build Stage (Compiles the Go application)
+FROM golang:1.22-alpine AS builder
 
-# Set the working directory inside the container
+# Set the working directory inside the build container
 WORKDIR /app
 
-# Copy the Go module files and download dependencies
-COPY go.mod go.sum ./
+# Copy dependency files first for efficient caching layers
+COPY go.mod ./
+RUN [ -f go.sum ] && COPY go.sum ./ || echo "No go.sum yet"
 RUN go mod download
 
 # Copy the rest of the application source code
 COPY . .
 
-# Build the Go application, linking it statically for better performance
-# CGO_ENABLED=0 is critical for static linking, improving portability.
-RUN CGO_ENABLED=0 go build -tags netgo -o /go-app .
+# Build a purely static, highly optimized binary for Linux targets
+RUN CGO_ENABLED=0 GOOS=linux go build -tags netgo -o geospatial-app .
 
-# Final Stage: Runs the compiled binary and static assets
-FROM debian:bullseye-slim
+# Step 2: Final Runtime Stage (Minimal and Secure)
+FROM alpine:latest  
 
-# Set the working directory
+# Install CA certificates so your Go backend can make secure HTTPS requests to Google Maps API
+RUN apk --no-cache add ca-certificates
+
 WORKDIR /app
 
-# Install the PostgreSQL client libraries required by the lib/pq driver
-# This is necessary for the Go binary to connect to the database securely.
-RUN apt-get update && apt-get install -y libpq-dev --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the static frontend assets directly into the application runtime root
+COPY --from=builder /app/static ./static
 
-# Copy the static frontend assets (index.html, app.js, style.css)
-COPY static static/
+# Copy the compiled application binary from the builder stage
+COPY --from=builder /app/geospatial-app .
 
-# Copy the compiled application from the builder stage
-COPY --from=builder /go-app .
+# Expose the port Cloud Run routes traffic to dynamically
+EXPOSE 8080
 
-# Set the required environment variables for the database connection
-ENV PORT=8080
-
-# Run the Go binary
-CMD ["/app/go-app"]
+# Run the Go binary from the root directory context
+CMD ["./geospatial-app"]
