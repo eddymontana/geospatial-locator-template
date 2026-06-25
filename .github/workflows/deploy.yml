@@ -24,4 +24,6 @@ jobs:
         service: geospatial-locator
         source: .
         region: us-central1
-        flags: --allow-unauthenticated
+        flags: |
+          --allow-unauthenticated
+          --set-env-vars=MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}
