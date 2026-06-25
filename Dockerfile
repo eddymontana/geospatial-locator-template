@@ -1,5 +1,5 @@
 # Step 1: Build Stage (Compiles the Go application)
-FROM golang:1.22-alpine AS builder
+FROM golang:alpine AS builder
 
 # Set the working directory inside the build container
 WORKDIR /app
