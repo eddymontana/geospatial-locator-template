@@ -1,81 +1,53 @@
-🚀 High-Performance Geospatial Store Locator (Go, PostGIS, Cloud Run)
+# 🌍 High-Performance Automated Geospatial Store Locator
 
-🎯 Architectural Overview and Goal
+A serverless, containerized Go microservice capable of providing sub-second nearest-neighbor geospatial searches. This architecture prioritizes execution speed, cost-efficiency, and geographical intelligence, backed by a fully automated production-grade DevOps pipeline.
 
-The primary objective was to build a cost-efficient system capable of providing sub-second nearest-neighbor search results based on user input, proving mastery over modern cloud native technologies and advanced geospatial data management.
+🚀 **[View Live Production Demo](https://geospatial-locator-795171569538.us-central1.run.app)**
 
-Extended Project Description
+---
 
-This project serves as a showcase of a fully containerized, serverless approach to solving complex real-world logistics and retail problems. Unlike simple map embeds or traditional database solutions, this architecture prioritizes speed, cost-efficiency, and true geographical intelligence.
+## 🛠️ System Architecture & CI/CD Pipeline
 
-The solution operates as a geospatial microservice, where the fast Go backend handles all compute and data logic, freeing the frontend for presentation. This architecture ensures high concurrency and resilience against failure, vital for peak usage scenarios. The service leverages the Cloud Run environment for true autoscaling, meaning resources only spin up when a user performs a search and scale down to zero when idle, demonstrating a deep understanding of optimized cloud infrastructure costs (a core value for an AI/ML Engineer). The successful transition from the brittle App Engine Flexible environment to this robust containerized solution highlights advanced deployment and troubleshooting expertise.
+This project operates on a **Zero-Ops deployment philosophy**. No manual terminal intervention, cloud-shell sessions, or container pushes are required to maintain or update the service.
 
-Architecture Diagram
+1. **Local Development:** Iterative updates are managed locally on Windows using VS Code.
+2. **Automated Pipeline Trigger:** Running `git push origin main` securely handshakes with a GitHub Actions runner.
+3. **IAM Authentication:** The runner authenticates cleanly to Google Cloud Platform using a securely masked Service Account Key (`GCP_SA_KEY`).
+4. **Optimized Multi-Stage Build:** Google Cloud Build handles compilation using a multi-stage Docker execution lifecycle to keep the footprint minimal.
+5. **Continuous Deployment:** The resulting image is versioned in Google Artifact Registry and rolled out instantly to an auto-scaling **Google Cloud Run** microservice.
 
-🛠️ Tech Stack & Key Components
+---
 
-This project showcases expertise across the development stack:
+## 🧰 The Tech Stack
 
-Layer
+| Layer | Technology | Key Skills Demonstrated |
+| :--- | :--- | :--- |
+| **Backend / Microservice** | Go (Golang) | Serverless computing, native high-concurrency routing, low startup latency. |
+| **Data Kernel** | Localized GeoJSON Matrix / PostGIS Integration | Spatial data parsing, Haversine calculation vectors, mathematical scaling. |
+| **Frontend Canvas** | Vanilla JS, HTML5, Custom CSS Grid | Responsive design, Google Maps JavaScript API (Satellite view, advanced markers). |
+| **DevOps / Infrastructure** | Docker, GitHub Actions, GCP Artifact Registry | CI/CD pipeline orchestration, multi-stage secure container compilation. |
 
-Technology
+---
 
-Key Components/Skills Demonstrated
+## 💡 Production Debugging & Lessons Learned
 
-Backend / Microservice
+### The Case of the 1ms `500 Internal Server Error`
+During deployment staging, the backend search endpoint (`/api/search`) began returning instant 1ms `500` system faults upon client requests. 
 
-GoLang on Cloud Run
+* **The Root Cause:** While local path configurations allowed the Go binary to locate data asset sheets natively on the desktop, the isolation of a standard production container structure meant the application could no longer resolve the relative `./data/` folder trees.
+* **The Engineering Fix:** Restructured the final execution block of the `Dockerfile` using multi-stage artifact extraction layers. By forcing explicit filesystem directory creation (`RUN mkdir -p data static`), both front-end dependencies and GeoJSON parameters are preserved perfectly at the container layer:
 
-Serverless computing, high concurrency, fast startup times, Dockerization.
+```dockerfile
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/main .
 
-Data Layer
+# Recreate structural directory tracking frameworks
+RUN mkdir -p data static
+COPY --from=builder /app/static/ ./static/
+COPY --from=builder /app/data/recycling-locations.geojson ./data/
 
-Google Cloud SQL + PostGIS
-
-Geospatial data storage, spatial indexing, complex nearest-neighbor querying (ST_DWithin).
-
-Frontend
-
-HTML/JS + Google Maps Platform
-
-Responsive UI, modern Geocoding API, and use of Advanced Markers.
-
-DevOps / CI/CD
-
-Docker + Cloud Build
-
-Containerization, multi-stage builds (Dockerfile), and successful deployment pipeline (cloudbuild.yaml).
-
-🧠 Core Technical Achievement (PostGIS Query)
-
-The critical component is the high-performance database interaction. Instead of fetching large datasets, the Go backend executes a PostGIS query that calculates the distance and filters the results on the server-side, returning only the nearest locations as optimized GeoJSON.
-
-Go Function: getGeoJSONFromDatabase in main.go
-
-SQL Logic: Uses ST_DWithin and ST_GEOGFromWKB to find points within a 10km radius of the user's latitude/longitude.
-
-🌐 Project Status
-
-The application was successfully deployed and verified live on Cloud Run.
-
-Current Live Status: OFFLINE (Project deleted to avoid incurring recurring charges).
-
-Proof of Work: All code, deployment files (Dockerfile, cloudbuild.yaml), and logic are contained within this repository.
-
-⚙️ How to Deploy This Project
-
-This guide assumes you have a GCP project and a Cloud SQL (PostgreSQL) instance with the PostGIS extension enabled.
-
-Prepare Data: Ensure data/recycling-locations.geojson exists and has been imported into your database as the austinrecycling table.
-
-Set Secrets: Update the database credentials in cloudbuild.yaml:
-
-DB_PASSWORD
-
-INSTANCE_CONNECTION_NAME (Set to <PROJECT_ID>:<REGION>:<INSTANCE_ID>)
-
-Deploy to Cloud Run (Final Command):
-
-gcloud builds submit --config cloudbuild.yaml
+EXPOSE 8080
+CMD ["./main"]
 
 
