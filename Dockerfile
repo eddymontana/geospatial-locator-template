@@ -11,12 +11,16 @@ WORKDIR /app
 # 1. Pull the compiled web server binary from the builder layer
 COPY --from=builder /app/main .
 
-# 2. Recreate the data directory and stage the spatial dataset
+# 2. Recreate and stage the static frontend folder layout
+RUN mkdir -p static
+COPY --from=builder /app/static/ ./static/
+
+# 3. Recreate and stage the geospatial data asset layout
 RUN mkdir -p data
 COPY --from=builder /app/data/recycling-locations.geojson ./data/
 
-# 3. Expose the standard routing interface port
+# 4. Expose the standard routing interface port
 EXPOSE 8080
 
-# 4. Trigger the server engine
+# 5. Trigger the server engine
 CMD ["./main"]
